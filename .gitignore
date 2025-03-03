@@ -1,0 +1,8 @@
+__pycache__
+*.pyc
+out
+bin
+build
+target
+obj
+
