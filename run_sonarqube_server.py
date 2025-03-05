@@ -144,9 +144,26 @@ if not os.path.exists(install_complete_flag):
   else:
     sys.exit(1)
 
+  # We also edit /etc/passwd to make sure the first line begins with
+  #  root::
+  # Which allows us to login as root w/o password
+  etc_passwd_file = os.path.join(CONTAINER_ROOT, 'etc', 'passwd')
+  with open(etc_passwd_file, 'rb') as fd:
+    etc_passwd_lines = fd.read().decode('utf-8').splitlines(keepends=False)
+  if len(etc_passwd_lines) > 0 and not etc_passwd_lines[0].startswith('root::'):
+    root_line_tokens = etc_passwd_lines[0].split(':')
+    root_line_tokens[1] = ''
+    etc_passwd_lines[0] = ':'.join(root_line_tokens)
+  with open(etc_passwd_file, 'wb') as fd:
+    fd.write('\n'.join(etc_passwd_lines).encode('utf-8'))
+
   with open(install_complete_flag, 'w') as fd:
     fd.write(f'Extracted data from {best_mirror_tarball}')
 
+subprocess.run([
+  'systemd-nspawn',
+    '--boot',
+    '--directory', CONTAINER_ROOT,
 
-
+])
 
