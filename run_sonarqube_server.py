@@ -21,6 +21,7 @@ import html.parser
 import tarfile
 import io
 import traceback
+import threading
 
 import zstandard
 
@@ -160,10 +161,36 @@ if not os.path.exists(install_complete_flag):
   with open(install_complete_flag, 'w') as fd:
     fd.write(f'Extracted data from {best_mirror_tarball}')
 
+def run_in_container(*cmd):
+  cmd_txt = ' '.join(x for x in cmd if not x is None)
+  cmd_list = [x for x in cmd if not x is None]
+  print(f'>>> {cmd_txt}')
+  r = subprocess.run([
+    'systemd-run',
+      '--machine', 'sonarqube',
+      '--pipe', '--pty',
+  ] + cmd_list)
+  return r.returncode
+
+def die_ifn_0(code):
+  if code != 0:
+    subprocess.run(['machinectl', 'stop', 'sonarqube'])
+    sys.exit(1)
+
+def setup_container_async():
+  time.sleep(3)
+  die_ifn_0(run_in_container('pacman', '-Syu', 'base-devel', 'git', 'vim'))
+  die_ifn_0(run_in_container('git', 'clone', 'https://github.com/E5ten/pacaur.git', '/opt/pacaur'))
+  die_ifn_0(run_in_container('sh', '-c', 'cd /opt/pacaur && makepkg -si'))
+
+
+bg_t = threading.Thread(target=setup_container_async, args=())
+bg_t.start()
+
 subprocess.run([
   'systemd-nspawn',
     '--boot',
+    '--machine', 'sonarqube',
     '--directory', CONTAINER_ROOT,
-
 ])
 
