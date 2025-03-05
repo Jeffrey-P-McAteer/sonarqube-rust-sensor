@@ -78,31 +78,40 @@ if os.path.exists(os.path.dirname(CONTAINER_ROOT)) and not os.path.exists(CONTAI
 # Step 1: Has the install completed?
 install_complete_flag = os.path.join(CONTAINER_ROOT, 'install-complete.txt')
 if not os.path.exists(install_complete_flag):
-  a_mirror_url = get_random_mirror()
-  print(f'Selected mirror {a_mirror_url}')
-  mirror_file_links = http_get_links(a_mirror_url)
-  best_mirror_tarball = next(link for link in mirror_file_links if 'archlinux-bootstrap'.casefold() in link.casefold() and not '.sig'.casefold() in link.casefold())
-  if not best_mirror_tarball.casefold().startswith('http'.casefold()):
-    best_mirror_tarball = os.path.join(a_mirror_url, best_mirror_tarball)
-  print(f'Downloading {best_mirror_tarball}')
-
-  with urllib.request.urlopen(best_mirror_tarball) as response:
-    response_bytes = response.read()
+  for _try_num in range(0, 6):
     try:
-      print(f'Decompressing...')
-      # If we're using zstandard great, if we've moved on to something else perhaps 'r:*' will look it's decompressor up.
-      dctx = zstandard.ZstdCompressor()
-      tar_bio = io.BytesIO()
-      oneway_reader = dctx.stream_reader(io.BytesIO(response_bytes))
-      tar_bio.write(oneway_reader.read())
-      tar_bio.seek(0)
+      a_mirror_url = get_random_mirror()
+      print(f'Selected mirror {a_mirror_url}')
+      mirror_file_links = http_get_links(a_mirror_url)
+      best_mirror_tarball = next(link for link in mirror_file_links if 'archlinux-bootstrap'.casefold() in link.casefold() and not '.sig'.casefold() in link.casefold())
+      if not best_mirror_tarball.casefold().startswith('http'.casefold()):
+        best_mirror_tarball = os.path.join(a_mirror_url, best_mirror_tarball)
+      print(f'Downloading {best_mirror_tarball}')
+
+      with urllib.request.urlopen(best_mirror_tarball) as response:
+        print(f'Decompressing...')
+        dctx = zstandard.ZstdDecompressor()
+        tar_bio = io.BytesIO()
+        oneway_reader = dctx.stream_reader(response)
+        #tar_bio.write(oneway_reader.read())
+        while True:
+          chunk = oneway_reader.read(256 * 1024)
+          if not chunk:
+            break
+          tar_bio.write(chunk)
+          print('.', end='', flush=True)
+        print('')
+        tar_bio.seek(0)
+
+        print(f'Extracting {int(tar_bio.getbuffer().nbytes / 1000000)}mb to {CONTAINER_ROOT}')
+        with tarfile.open(fileobj=tar_bio, mode='r:') as tar:
+          tar.extractall(path=CONTAINER_ROOT, numeric_owner=True, filter='tar')
+        # Success
+        break
     except:
       traceback.print_exc()
-      tar_bio = io.BytesIO(response_bytes)
-
-    print(f'Extracting {int(len(response_bytes) / 1000000)}mb to {CONTAINER_ROOT}')
-    with tarfile.open(fileobj=tar_bio, mode='r:') as tar:
-      tar.extractall(path=CONTAINER_ROOT, numeric_owner=True, filter='tar')
+  else:
+    sys.exit(1)
 
   with open(install_complete_flag, 'w') as fd:
     fd.write(f'Extracted data from {best_mirror_tarball}')
