@@ -49,7 +49,7 @@ class ParseAllLinks(html.parser.HTMLParser):
     pass
 
 def http_get_str(url):
-  with urllib.request.urlopen(url) as response:
+  with urllib.request.urlopen(url, timeout=9) as response:
     reply_txt = response.read()
     if not isinstance(reply_txt, str):
       reply_txt = reply_txt.decode('utf-8')
@@ -66,7 +66,18 @@ def http_get_links(url):
 
 def get_random_mirror():
   mirror_links = http_get_links('https://archlinux.org/download/')
-  return random.choice([link for link in mirror_links if 'archlinux/iso' in link ])
+  return random.choice([
+    link for link in mirror_links if 'archlinux/iso'.casefold() in link.casefold() and ('.com'.casefold() in link.casefold() or '.net'.casefold() in link.casefold())
+  ])
+
+def empty_dir(dir_name):
+  if os.path.isdir(dir_name):
+    for dirent in os.listdir(dir_name):
+      dirent_path = os.path.join(dir_name, dirent)
+      if os.path.isdir(dirent_path):
+        shutil.rmtree(dirent_path)
+      else:
+        os.remove(dirent_path)
 
 CONTAINER_ROOT = os.environ.get('CONTAINER_ROOT', '/mnt/scratch/containers/sonarqube')
 print(f'CONTAINER_ROOT={CONTAINER_ROOT}')
@@ -80,6 +91,9 @@ install_complete_flag = os.path.join(CONTAINER_ROOT, 'install-complete.txt')
 if not os.path.exists(install_complete_flag):
   for _try_num in range(0, 6):
     try:
+
+      empty_dir(CONTAINER_ROOT)
+
       a_mirror_url = get_random_mirror()
       print(f'Selected mirror {a_mirror_url}')
       mirror_file_links = http_get_links(a_mirror_url)
@@ -88,7 +102,7 @@ if not os.path.exists(install_complete_flag):
         best_mirror_tarball = os.path.join(a_mirror_url, best_mirror_tarball)
       print(f'Downloading {best_mirror_tarball}')
 
-      with urllib.request.urlopen(best_mirror_tarball) as response:
+      with urllib.request.urlopen(best_mirror_tarball, timeout=45) as response:
         print(f'Decompressing...')
         dctx = zstandard.ZstdDecompressor()
         tar_bio = io.BytesIO()
@@ -106,9 +120,26 @@ if not os.path.exists(install_complete_flag):
         print(f'Extracting {int(tar_bio.getbuffer().nbytes / 1000000)}mb to {CONTAINER_ROOT}')
         with tarfile.open(fileobj=tar_bio, mode='r:') as tar:
           tar.extractall(path=CONTAINER_ROOT, numeric_owner=True, filter='tar')
-        # Success
-        break
+
+        # If the sub-directory root.x86_64 exists, move all children up one directory
+        # then delete it
+        root_x86_64_folder = os.path.join(CONTAINER_ROOT, 'root.x86_64')
+        if os.path.exists(root_x86_64_folder) and os.path.isdir(root_x86_64_folder):
+          for dirent in os.listdir(root_x86_64_folder):
+            dirent_path = os.path.join(root_x86_64_folder, dirent)
+            if os.path.isdir(dirent_path):
+              shutil.copytree(dirent_path, os.path.join(CONTAINER_ROOT, dirent), symlinks=True, ignore_dangling_symlinks=True)
+            else:
+              shutil.copy(dirent_path, os.path.join(CONTAINER_ROOT, dirent), follow_symlinks=True)
+
+        if os.path.exists(root_x86_64_folder) and os.path.isdir(root_x86_64_folder):
+          shutil.rmtree(root_x86_64_folder)
+
+      print(f'Successfully extracted data to {CONTAINER_ROOT}')
+      break
     except:
+      if 'KeyboardInterrupt' in traceback.format_exc():
+        raise
       traceback.print_exc()
   else:
     sys.exit(1)
