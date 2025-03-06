@@ -80,6 +80,28 @@ def empty_dir(dir_name):
       else:
         os.remove(dirent_path)
 
+def remove_root_pw_from_etc_passwd():
+  etc_passwd_file = os.path.join(CONTAINER_ROOT, 'etc', 'passwd')
+  with open(etc_passwd_file, 'rb') as fd:
+    etc_passwd_lines = fd.read().decode('utf-8').splitlines(keepends=False)
+  if len(etc_passwd_lines) > 0 and not etc_passwd_lines[0].startswith('root::'):
+    root_line_tokens = etc_passwd_lines[0].split(':')
+    root_line_tokens[1] = ''
+    etc_passwd_lines[0] = ':'.join(root_line_tokens)
+  with open(etc_passwd_file, 'wb') as fd:
+    fd.write('\n'.join(etc_passwd_lines).encode('utf-8'))
+
+def write_initial_mirrorlist():
+  commented_mirrorlist = http_get_str('https://archlinux.org/mirrorlist/?country=US&protocol=http&protocol=https&ip_version=4')
+  lines = commented_mirrorlist.splitlines(keepends=False)
+  for i in range(0, len(lines)):
+    if lines[i].startswith('#Server') and random.choice([True, False, False, False]):
+      lines[i] = lines[i].replace('#Server', 'Server')
+  container_mirrorlist_file = os.path.join(CONTAINER_ROOT, 'etc', 'pacman.d', 'mirrorlist')
+  with open(container_mirrorlist_file, 'wb') as fd:
+    fd.write(('\n'.join(lines)+'\n').encode('utf-8'))
+
+
 CONTAINER_ROOT = os.environ.get('CONTAINER_ROOT', '/mnt/scratch/containers/sonarqube')
 print(f'CONTAINER_ROOT={CONTAINER_ROOT}')
 
@@ -148,15 +170,9 @@ if not os.path.exists(install_complete_flag):
   # We also edit /etc/passwd to make sure the first line begins with
   #  root::
   # Which allows us to login as root w/o password
-  etc_passwd_file = os.path.join(CONTAINER_ROOT, 'etc', 'passwd')
-  with open(etc_passwd_file, 'rb') as fd:
-    etc_passwd_lines = fd.read().decode('utf-8').splitlines(keepends=False)
-  if len(etc_passwd_lines) > 0 and not etc_passwd_lines[0].startswith('root::'):
-    root_line_tokens = etc_passwd_lines[0].split(':')
-    root_line_tokens[1] = ''
-    etc_passwd_lines[0] = ':'.join(root_line_tokens)
-  with open(etc_passwd_file, 'wb') as fd:
-    fd.write('\n'.join(etc_passwd_lines).encode('utf-8'))
+  remove_root_pw_from_etc_passwd()
+
+  write_initial_mirrorlist()
 
   with open(install_complete_flag, 'w') as fd:
     fd.write(f'Extracted data from {best_mirror_tarball}')
@@ -175,14 +191,30 @@ def run_in_container(*cmd):
 def die_ifn_0(code):
   if code != 0:
     subprocess.run(['machinectl', 'stop', 'sonarqube'])
+    print(f'Exited because code {code} returned')
     sys.exit(1)
 
 def setup_container_async():
   time.sleep(3)
-  die_ifn_0(run_in_container('pacman', '-Syu', 'base-devel', 'git', 'vim'))
-  die_ifn_0(run_in_container('git', 'clone', 'https://github.com/E5ten/pacaur.git', '/opt/pacaur'))
+
+  die_ifn_0(run_in_container('pacman-key', '--init'))
+  die_ifn_0(run_in_container('pacman-key', '--populate', 'archlinux'))
+
+  if random.choice([True, False, False, False, False, False, False]):
+    die_ifn_0(run_in_container('pacman', '-Syu')) # Sync & upgrade all
+  die_ifn_0(run_in_container('pacman', '-S', '--noconfirm', 'base-devel', 'git', 'vim', 'sudo'))
+
+  # Setup 'nobody' as an admin because sure why not it already exists
+  die_ifn_0(run_in_container('usermod', '-s', '/usr/bin/bash', 'nobody'))
+
+  if not os.path.exists(os.path.join(CONTAINER_ROOT, 'opt', 'pacaur')):
+    die_ifn_0(run_in_container('git', 'clone', 'https://github.com/E5ten/pacaur.git', '/opt/pacaur'))
+
+  die_ifn_0(run_in_container('chown', '-R', 'nobody:nobody', '/opt/pacaur'))
   die_ifn_0(run_in_container('sh', '-c', 'cd /opt/pacaur && makepkg -si'))
 
+
+write_initial_mirrorlist()
 
 bg_t = threading.Thread(target=setup_container_async, args=())
 bg_t.start()
