@@ -70,6 +70,24 @@ def ensure_sonar_scanner_available():
 
 ss_script = ensure_sonar_scanner_available()
 print(f'ss_script = {ss_script}')
-subprocess.run([
-  ss_script
-])
+rust_project_folder_to_scan = os.environ.get('FOLDER_TO_SCAN', os.path.join(REPO_ROOT, 'example_rust_code'))
+print(f'FOLDER_TO_SCAN = {rust_project_folder_to_scan}')
+
+sonar_server_url = os.environ.get('SONAR_SERVER_URL', 'http://127.0.0.1:9000')
+print(f'SONAR_SERVER_URL = {sonar_server_url}')
+
+if not 'SONAR_TOKEN' in os.environ:
+  print('WARNING: SONAR_TOKEN not set, ensure sonar.token is specified in your host or project sonar-*.properties file!')
+
+# Run the scan!
+sonar_scan_cmd = [
+  ss_script,
+    f'-Dsonar.sources=.',
+    f'-Dsonar.host.url={sonar_server_url}',
+]
+print()
+print(f'Running {" ".join(sonar_scan_cmd)} inside {rust_project_folder_to_scan}')
+print()
+subprocess.run(sonar_scan_cmd, cwd=rust_project_folder_to_scan)
+
+
