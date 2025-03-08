@@ -195,6 +195,17 @@ def run_in_container(*cmd):
   ] + cmd_list)
   return (cmd_txt, r.returncode)
 
+def run_in_container_silent(*cmd):
+  cmd_txt = ' '.join(x for x in cmd if not x is None)
+  cmd_list = [x for x in cmd if not x is None]
+  print(f'>>> {cmd_txt}')
+  r = subprocess.run([
+    'systemd-run',
+      '--machine', 'sonarqube',
+      '--pipe', '--pty', '--quiet',
+  ] + cmd_list, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+  return (cmd_txt, r.returncode)
+
 def die_ifn_0(cmd_and_code):
   cmd = 'UNKNOWN'
   code = cmd_and_code
@@ -227,7 +238,7 @@ def pass_flag(flag_name):
 def setup_container_async():
 
   # every 250ms ask if container is up before continuing w/ setup commands
-  while run_in_container('true')[1] != 0:
+  while run_in_container_silent('true')[1] != 0:
     print('+', end='', flush=True)
     time.sleep(0.25)
   print()
