@@ -269,9 +269,6 @@ Defaults:nobody !tty_tickets
   # yay -S <aur-pkg-name> is now available; ensure we run as sudo-nobody!
 
 
-
-write_initial_mirrorlist()
-
 bg_t = threading.Thread(target=setup_container_async, args=())
 bg_t.start()
 
