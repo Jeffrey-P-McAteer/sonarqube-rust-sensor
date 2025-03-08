@@ -88,6 +88,13 @@ def remove_root_pw_from_etc_passwd():
     root_line_tokens = etc_passwd_lines[0].split(':')
     root_line_tokens[1] = ''
     etc_passwd_lines[0] = ':'.join(root_line_tokens)
+
+  for i in range(0, len(etc_passwd_lines)):
+    if etc_passwd_lines[i].startswith('nobody') and not etc_passwd_lines[i].startswith('nobody::'):
+      nobody_line_tokens = etc_passwd_lines[i].split(':')
+      nobody_line_tokens[1] = ''
+      etc_passwd_lines[i] = ':'.join(nobody_line_tokens)
+
   with open(etc_passwd_file, 'wb') as fd:
     fd.write('\n'.join(etc_passwd_lines).encode('utf-8'))
 
@@ -110,8 +117,8 @@ if os.path.exists(os.path.dirname(CONTAINER_ROOT)) and not os.path.exists(CONTAI
   os.makedirs(CONTAINER_ROOT, exist_ok=True)
 
 # Step 1: Has the install completed?
-install_complete_flag = os.path.join(CONTAINER_ROOT, 'install-complete.txt')
-if not os.path.exists(install_complete_flag):
+download_extract_os_complete_flag = os.path.join(CONTAINER_ROOT, 'install-complete.txt')
+if not os.path.exists(download_extract_os_complete_flag):
   for _try_num in range(0, 6):
     try:
 
@@ -174,7 +181,7 @@ if not os.path.exists(install_complete_flag):
 
   write_initial_mirrorlist()
 
-  with open(install_complete_flag, 'w') as fd:
+  with open(download_extract_os_complete_flag, 'w') as fd:
     fd.write(f'Extracted data from {best_mirror_tarball}')
 
 def run_in_container(*cmd):
@@ -184,34 +191,83 @@ def run_in_container(*cmd):
   r = subprocess.run([
     'systemd-run',
       '--machine', 'sonarqube',
-      '--pipe', '--pty',
+      '--pipe', '--pty', '--quiet',
   ] + cmd_list)
-  return r.returncode
+  return (cmd_txt, r.returncode)
 
-def die_ifn_0(code):
+def die_ifn_0(cmd_and_code):
+  cmd = 'UNKNOWN'
+  code = cmd_and_code
+  if isinstance(cmd_and_code, tuple) and len(cmd_and_code) > 0:
+    cmd = cmd_and_code[0]
+    code = cmd_and_code[1]
   if code != 0:
     subprocess.run(['machinectl', 'stop', 'sonarqube'])
-    print(f'Exited because code {code} returned')
+    print(f'Exited because code {code} returned from the command "{cmd}"')
     sys.exit(1)
 
+def di0(cmd_and_code):
+  die_ifn_0(cmd_and_code)
+
+def flag_passed(flag_name):
+  flag_dir = os.path.join(CONTAINER_ROOT, 'flags')
+  if not os.path.exists(flag_dir):
+    os.makedirs(flag_dir, exist_ok=True)
+  flag_file = os.path.join(flag_dir, flag_name)
+  return os.path.exists(flag_file)
+
+def pass_flag(flag_name):
+  flag_dir = os.path.join(CONTAINER_ROOT, 'flags')
+  if not os.path.exists(flag_dir):
+    os.makedirs(flag_dir, exist_ok=True)
+  flag_file = os.path.join(flag_dir, flag_name)
+  with open(flag_file, 'w') as fd:
+    fd.write(flag_name)
+
 def setup_container_async():
-  time.sleep(3)
+  time.sleep(4)
 
-  die_ifn_0(run_in_container('pacman-key', '--init'))
-  die_ifn_0(run_in_container('pacman-key', '--populate', 'archlinux'))
+  if not flag_passed('pacman-key-setup'):
+    di0(run_in_container('pacman-key', '--init'))
+    di0(run_in_container('pacman-key', '--populate', 'archlinux'))
+    pass_flag('pacman-key-setup')
 
-  if random.choice([True, False, False, False, False, False, False]):
-    die_ifn_0(run_in_container('pacman', '-Syu')) # Sync & upgrade all
-  die_ifn_0(run_in_container('pacman', '-S', '--noconfirm', 'base-devel', 'git', 'vim', 'sudo'))
+  if random.choice([True, False, False, False, False, False, False, False]):
+    print(f'Running regular maitenence package sync + upgrade')
+    di0(run_in_container('pacman', '-Syu')) # Sync & upgrade all
+
+  if not flag_passed('pacman-install-base-packaged'):
+    di0(run_in_container('pacman', '-S', '--noconfirm', 'base-devel', 'git', 'vim', 'sudo'))
+    pass_flag('pacman-install-base-packaged')
 
   # Setup 'nobody' as an admin because sure why not it already exists
-  die_ifn_0(run_in_container('usermod', '-s', '/usr/bin/bash', 'nobody'))
+  if not flag_passed('setup-nobody-user'):
+    di0(run_in_container('usermod', '--shell', '/usr/bin/bash', 'nobody'))
+    di0(run_in_container('usermod', '--expiredate=', 'nobody'))
+    os.makedirs(os.path.join(CONTAINER_ROOT, 'home', 'nobody'), exist_ok=True)
+    di0(run_in_container('chown', '-R', 'nobody:nobody', '/home/nobody'))
+    di0(run_in_container('usermod', '-d', '/home/nobody', 'nobody'))
+    pass_flag('setup-nobody-user')
 
-  if not os.path.exists(os.path.join(CONTAINER_ROOT, 'opt', 'pacaur')):
-    die_ifn_0(run_in_container('git', 'clone', 'https://github.com/E5ten/pacaur.git', '/opt/pacaur'))
+  nobody_sudoers_file = os.path.join(CONTAINER_ROOT, 'etc', 'sudoers.d', 'nobody')
+  if not os.path.exists(nobody_sudoers_file):
+    with open(nobody_sudoers_file, 'w') as fd:
+      fd.write('''
+nobody ALL=(ALL) NOPASSWD: ALL
+Defaults:nobody timestamp_timeout=9000
+Defaults:nobody !tty_tickets
+'''.strip())
 
-  die_ifn_0(run_in_container('chown', '-R', 'nobody:nobody', '/opt/pacaur'))
-  die_ifn_0(run_in_container('sh', '-c', 'cd /opt/pacaur && makepkg -si'))
+  if not os.path.exists(os.path.join(CONTAINER_ROOT, 'opt', 'yay')):
+    di0(run_in_container('git', 'clone', 'https://aur.archlinux.org/yay.git', '/opt/yay'))
+
+  if not flag_passed('install-yay'):
+    di0(run_in_container('chown', '-R', 'nobody:nobody', '/opt/yay'))
+    di0(run_in_container('sudo', '-i', '-u', 'nobody', 'sh', '-c', 'cd /opt/yay && makepkg -si'))
+    pass_flag('install-yay')
+
+  # yay -S <aur-pkg-name> is now available; ensure we run as sudo-nobody!
+
 
 
 write_initial_mirrorlist()
