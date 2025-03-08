@@ -263,16 +263,25 @@ Defaults:nobody timestamp_timeout=9000
 Defaults:nobody !tty_tickets
 '''.strip())
 
+  def run_nobody_shell(shellcode):
+    if isinstance(shellcode, list):
+      shellcode = ' '.join(x for x in shellcode if not (x is None))
+    return run_in_container('sudo', '-i', '-u', 'nobody', 'sh', '-c', shellcode)
+
+
   if not os.path.exists(os.path.join(CONTAINER_ROOT, 'opt', 'yay')):
     di0(run_in_container('git', 'clone', 'https://aur.archlinux.org/yay.git', '/opt/yay'))
 
   if not flag_passed('install-yay'):
     di0(run_in_container('chown', '-R', 'nobody:nobody', '/opt/yay'))
-    di0(run_in_container('sudo', '-i', '-u', 'nobody', 'sh', '-c', 'cd /opt/yay && makepkg -si'))
+    di0(run_nobody_shell('cd /opt/yay && makepkg -si'))
     pass_flag('install-yay')
 
   # yay -S <aur-pkg-name> is now available; ensure we run as sudo-nobody!
-
+  if not flag_passed('install-sonarqube-bin'):
+    di0(run_nobody_shell('yay -S sonarqube-bin'))
+    di0(run_in_container('systemctl', 'enable', '--now', 'sonarqube.service'))
+    pass_flag('install-sonarqube-bin')
 
 bg_t = threading.Thread(target=setup_container_async, args=())
 bg_t.start()
