@@ -225,7 +225,12 @@ def pass_flag(flag_name):
     fd.write(flag_name)
 
 def setup_container_async():
-  time.sleep(4)
+
+  # every 250ms ask if container is up before continuing w/ setup commands
+  while run_in_container('true')[1] != 0:
+    print('+', end='', flush=True)
+    time.sleep(0.25)
+  print()
 
   if not flag_passed('pacman-key-setup'):
     di0(run_in_container('pacman-key', '--init'))
