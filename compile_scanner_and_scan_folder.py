@@ -35,6 +35,19 @@ def scan_for_filename(directory, file_name):
           return dirent_path
   return None
 
+def scan_for_pieces(directory, file_name_pieces):
+  if os.path.exists(directory) and os.path.isdir(directory):
+    for dirent in os.listdir(directory):
+      dirent_path = os.path.join(directory, dirent)
+      if os.path.isdir(dirent_path):
+        maybe_found = scan_for_pieces(dirent_path, file_name_pieces)
+        if maybe_found is not None:
+          return maybe_found
+      else:
+        if all(piece.casefold() in dirent.casefold() for piece in file_name_pieces):
+          return dirent_path
+  return None
+
 
 def ensure_sonar_scanner_available():
   sonar_script_name = 'sonar-scanner'+('.bat' if os.name == 'nt' else '')
@@ -80,7 +93,14 @@ subprocess.run(mvn_compile_cmd, cwd=mvn_proj_folder, check=True)
 
 # Step 2 - Install/Deploy the maven project under ./sonarqube-rust-sensor/
 
-### Big TODOS
+sonar_rust_sensor_jar = scan_for_pieces(os.path.join(mvn_proj_folder, 'target'), ['sonarqube', 'rust', 'sensor', '.jar'])
+print(f'sonar_rust_sensor_jar = {sonar_rust_sensor_jar}')
+if sonar_rust_sensor_jar is None or not os.path.exists(sonar_rust_sensor_jar):
+  print(f'Fatal Error: {sonar_rust_sensor_jar} does not exist!')
+  sys.exit(1)
+
+
+
 
 # Step 3 - Sonar-Scan the rust code!
 
