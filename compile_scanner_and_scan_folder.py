@@ -19,6 +19,7 @@ import zipfile
 import urllib.request
 import stat
 import traceback
+import time
 
 REPO_ROOT = os.path.dirname(__file__)
 
@@ -99,7 +100,31 @@ if sonar_rust_sensor_jar is None or not os.path.exists(sonar_rust_sensor_jar):
   print(f'Fatal Error: {sonar_rust_sensor_jar} does not exist!')
   sys.exit(1)
 
+# We will need root access to copy files into the container's root filesystem
+CONTAINER_ROOT = os.environ.get('CONTAINER_ROOT', '/mnt/scratch/containers/sonarqube')
+print(f'CONTAINER_ROOT={CONTAINER_ROOT}')
+if not os.path.exists(CONTAINER_ROOT):
+  print(f'Fatal Error: {CONTAINER_ROOT} does not exist! Please execute "uv run run_sonarqube_server.py" to build the server')
+  sys.exit(1)
 
+container_plugin_folder = os.path.join(CONTAINER_ROOT, 'usr', 'share', 'webapps', 'sonarqube', 'extensions', 'plugins')
+print(f'container_plugin_folder = {container_plugin_folder}')
+pre_existing_jar = scan_for_pieces(container_plugin_folder, ['sonarqube', 'rust', 'sensor', '.jar'])
+if not pre_existing_jar is None and os.path.exists(pre_existing_jar):
+  subprocess.run([
+    'sudo', 'rm', pre_existing_jar
+  ], check=True)
+
+subprocess.run([
+  'sudo', 'cp', sonar_rust_sensor_jar, container_plugin_folder
+], check=True)
+
+# Tell machinectl to reboot container
+subprocess.run([
+  'sudo', 'machinectl', 'reboot', 'sonarqube',
+], check=True)
+
+time.sleep(12)
 
 
 # Step 3 - Sonar-Scan the rust code!
