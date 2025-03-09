@@ -66,7 +66,23 @@ def ensure_sonar_scanner_available():
 
   return shutil.which(sonar_script_name)
 
+# Step 1 - Compile the maven project under ./sonarqube-rust-sensor/
 
+mvn_proj_folder = os.path.join(REPO_ROOT, 'sonarqube-rust-sensor')
+mvn_compile_cmd = [
+  'mvn', 'package'
+]
+print()
+print(f'Running {" ".join(mvn_compile_cmd)} inside {mvn_proj_folder}')
+print()
+subprocess.run(mvn_compile_cmd, cwd=mvn_proj_folder, check=True)
+
+
+# Step 2 - Install/Deploy the maven project under ./sonarqube-rust-sensor/
+
+### Big TODOS
+
+# Step 3 - Sonar-Scan the rust code!
 
 ss_script = ensure_sonar_scanner_available()
 print(f'ss_script = {ss_script}')
@@ -88,6 +104,6 @@ sonar_scan_cmd = [
 print()
 print(f'Running {" ".join(sonar_scan_cmd)} inside {rust_project_folder_to_scan}')
 print()
-subprocess.run(sonar_scan_cmd, cwd=rust_project_folder_to_scan)
+subprocess.run(sonar_scan_cmd, cwd=rust_project_folder_to_scan, check=True)
 
 

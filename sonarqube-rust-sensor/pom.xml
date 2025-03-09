@@ -1,0 +1,54 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.jmcateer.sonarqube_rust_sensor</groupId>
+  <artifactId>sonarqube_rust_sensor</artifactId>
+  <!--<packaging>jar</packaging>-->
+  <version>1.0-SNAPSHOT</version>
+  <name>sonarqube_rust_sensor</name>
+  <url>https://github.com/Jeffrey-P-McAteer/sonarqube-rust-sensor</url>
+
+  <!-- this is important for sonar-packaging-maven-plugin -->
+  <packaging>sonar-plugin</packaging>
+
+  <properties>
+      <!-- https://maven.apache.org/general.html#encoding-warning -->
+      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+      <maven.compiler.source>1.8</maven.compiler.source>
+      <maven.compiler.target>1.8</maven.compiler.target>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <!-- groupId has changed to 'org.sonarsource.api.plugin' starting on version 9.5 -->
+      <groupId>org.sonarsource.api.plugin</groupId>
+      <artifactId>sonar-plugin-api</artifactId>
+      <!-- minimal version of SonarQube to support. -->
+      <version>11.2.0.2797</version>
+      <!-- mandatory scope -->
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.sonarsource.sonar-packaging-maven-plugin</groupId>
+        <artifactId>sonar-packaging-maven-plugin</artifactId>
+        <version>1.18.0.372</version>
+        <extensions>true</extensions>
+        <configuration>
+          <!-- the entry-point class that extends org.sonar.api.SonarPlugin -->
+          <pluginClass>com.jmcateer.sonarqube_rust_sensor.RustSensorPlugin</pluginClass>
+
+          <!-- advanced properties can be set here. See paragraph "Advanced Build Properties". -->
+          <pluginDescription>
+            A Rust-Clippy translator into SonarQube's formats
+          </pluginDescription>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

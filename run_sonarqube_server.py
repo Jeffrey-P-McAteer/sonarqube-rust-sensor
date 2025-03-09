@@ -294,6 +294,7 @@ Defaults:nobody !tty_tickets
     di0(run_in_container('systemctl', 'enable', '--now', 'sonarqube.service'))
     pass_flag('install-sonarqube-bin')
 
+  time.sleep(1)
   print(f'Sonarqube default credentials are admin:admin, please change them manually in browser to admin:password (// TODO automate this change)')
 
 
