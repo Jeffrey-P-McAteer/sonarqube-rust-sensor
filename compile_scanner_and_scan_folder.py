@@ -111,8 +111,9 @@ def delay_until_sonarqube_version_is_200(url, max_seconds):
         print(f'INFO: The server at {url} is running SonarQube version {result}')
         return # We're done!
     except:
-      if not '404' in traceback.format_exc():
-        traceback.print_exc()
+      ex_s = traceback.format_exc()
+      if not ('404' in ex_s or 'Connection refused' in ex_s):
+        traceback.print_exc() # This is a new error
   print()
   print(f'WARNING: {url}/api/server/version did not come online in {max_seconds} seconds!')
 

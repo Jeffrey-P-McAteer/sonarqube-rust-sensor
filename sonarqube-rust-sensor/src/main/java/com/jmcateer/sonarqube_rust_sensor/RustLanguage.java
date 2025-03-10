@@ -14,9 +14,12 @@ public final class RustLanguage extends AbstractLanguage {
         this.config = config;
     }
 
+    @Override
     public String getName() { return Constants.LANGUAGE_NAME; }
+    @Override
     public String getKey() { return Constants.LANGUAGE_KEY; }
 
+    @Override
     public String[] getFileSuffixes() {
         final String[] suffixes = config.getStringArray("sonar.rust.file-suffixes");
         if (suffixes == null || suffixes.length == 0) {
@@ -25,6 +28,17 @@ public final class RustLanguage extends AbstractLanguage {
         return suffixes;
     }
 
+    @Override
+    public String[] filenamePatterns() {
+        String[] suffixes = this.getFileSuffixes();
+        String[] patterns = new String[suffixes.length];
+        for (int i=0; i<suffixes.length; i+=1) {
+            patterns[i] = "**/*"+suffixes[i];
+        }
+        return patterns;
+    }
+
+    @Override
     public boolean publishAllFiles() { return true; }
 
 }

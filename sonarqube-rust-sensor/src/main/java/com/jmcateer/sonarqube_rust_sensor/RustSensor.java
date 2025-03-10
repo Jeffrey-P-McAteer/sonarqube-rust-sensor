@@ -30,9 +30,12 @@ public class RustSensor implements Sensor {
       final Configuration config = context.config();
       final ExecutorService service = Executors.newWorkStealingPool();
       final org.sonar.api.batch.fs.FileSystem fs = context.fileSystem();
-      final Iterable<InputFile> files = fs.inputFiles(fs.predicates().hasLanguage(Constants.LANGUAGE_KEY));
+      //final Iterable<InputFile> files = fs.inputFiles(fs.predicates().hasLanguage(Constants.LANGUAGE_KEY));
+      final Iterable<InputFile> files = fs.inputFiles(fs.predicates().all());
       final java.util.Random test_random = new java.util.Random();
+      final java.util.ArrayList<String> test_files = new java.util.ArrayList<String>();
       files.forEach(inputFile -> {
+            test_files.add(""+inputFile);
             service.execute(
               new Runnable() {
                 @SuppressWarnings("deprecation")
@@ -62,6 +65,9 @@ public class RustSensor implements Sensor {
               }
             );
         });
+
+        LOGGER.debug("RustSensor has found {} files", test_files.size());
+
         service.shutdown();
         try {
             service.awaitTermination(36, TimeUnit.SECONDS);

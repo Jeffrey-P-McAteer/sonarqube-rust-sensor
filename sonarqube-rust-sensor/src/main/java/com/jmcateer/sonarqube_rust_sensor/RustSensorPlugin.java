@@ -36,10 +36,7 @@ public class RustSensorPlugin implements Plugin
         context.addExtensions(
             RustLanguage.class,
             RustRulesDefinition.class,
-            RustQualityProfile.class
-        );
-
-        context.addExtension(
+            RustQualityProfile.class,
             RustSensor.class
         );
 
