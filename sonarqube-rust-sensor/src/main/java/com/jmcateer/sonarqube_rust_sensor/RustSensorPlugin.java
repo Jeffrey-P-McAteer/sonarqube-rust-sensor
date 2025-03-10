@@ -35,7 +35,9 @@ public class RustSensorPlugin implements Plugin
 
         context.addExtensions(
             RustLanguage.class,
-            RustRulesDefinition.class);
+            RustRulesDefinition.class,
+            RustQualityProfile.class
+        );
 
         // TODO see https://github.com/gretard/sonar-sql-plugin/blob/master/src/sonar-sql-plugin/src/main/java/org/sonar/plugins/sql/SQLPlugin.java#L109
 
