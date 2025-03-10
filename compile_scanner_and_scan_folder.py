@@ -174,7 +174,8 @@ if not url_is_alive(sonar_server_url) and ('localhost' in sonar_server_url or '1
       '--unit=run_sonarqube_server_py',
       f'--working-directory={REPO_ROOT}',
       '--collect',
-      sys.executable, 'run_sonarqube_server.py'
+      #sys.executable, 'run_sonarqube_server.py'
+      'uv', 'run', 'run_sonarqube_server.py'
   ], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
   print(f'systemd-run returned {r.returncode}')
   delay_until_url_available(sonar_server_url, seconds_to_wait_for_server_restart)
