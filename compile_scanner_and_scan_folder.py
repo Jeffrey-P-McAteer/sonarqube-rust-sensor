@@ -152,7 +152,7 @@ if 'localhost' in sonar_server_url or '127.0.0' in sonar_server_url:
     'sudo', 'machinectl', 'reboot', 'sonarqube',
   ], check=False)
   if r.returncode == 0:
-    delay_until_url_available(sonar_server_url, 36)
+    delay_until_url_available(sonar_server_url, 60)
 
 
 # Step 3 - Sonar-Scan the rust code!
@@ -174,7 +174,7 @@ if not url_is_alive(sonar_server_url) and ('localhost' in sonar_server_url or '1
       sys.executable, 'run_sonarqube_server.py'
   ], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
   print(f'systemd-run returned {r.returncode}')
-  delay_until_url_available(sonar_server_url, 32)
+  delay_until_url_available(sonar_server_url, 60)
 
 
 if not 'SONAR_TOKEN' in os.environ:
