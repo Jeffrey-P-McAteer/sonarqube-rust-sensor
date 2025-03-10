@@ -100,6 +100,22 @@ def delay_until_url_available(url, max_seconds):
   print()
   print(f'WARNING: {url} did not come online in {max_seconds} seconds!')
 
+def delay_until_sonarqube_version_is_200(url, max_seconds):
+  url = url.rstrip('/')
+  for i in range(0, int(max_seconds)):
+    time.sleep(1)
+    print('+', flush=True, end='')
+    try:
+      with urllib.request.urlopen(f'{url}/api/server/version') as response:
+        result = response.read()
+        print(f'INFO: The server at {url} is running SonarQube version {result}')
+        return # We're done!
+    except:
+      if not '404' in traceback.format_exc():
+        traceback.print_exc()
+  print()
+  print(f'WARNING: {url}/api/server/version did not come online in {max_seconds} seconds!')
+
 
 
 
@@ -183,6 +199,8 @@ if not url_is_alive(sonar_server_url) and ('localhost' in sonar_server_url or '1
 
 if not 'SONAR_TOKEN' in os.environ:
   print('WARNING: SONAR_TOKEN not set, ensure sonar.token is specified in your host or project sonar-*.properties file!')
+
+delay_until_sonarqube_version_is_200(sonar_server_url, seconds_to_wait_for_server_restart)
 
 # Run the scan!
 sonar_scan_cmd = [
