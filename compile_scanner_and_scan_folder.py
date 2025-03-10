@@ -123,6 +123,9 @@ if sonar_rust_sensor_jar is None or not os.path.exists(sonar_rust_sensor_jar):
   print(f'Fatal Error: {sonar_rust_sensor_jar} does not exist!')
   sys.exit(1)
 
+seconds_to_wait_for_server_restart = int(os.environ.get('HTTP_WAIT_SECONDS', '45'))
+print(f'HTTP_WAIT_SECONDS = {seconds_to_wait_for_server_restart}')
+
 # We will need root access to copy files into the container's root filesystem
 CONTAINER_ROOT = os.environ.get('CONTAINER_ROOT', '/mnt/scratch/containers/sonarqube')
 print(f'CONTAINER_ROOT={CONTAINER_ROOT}')
@@ -152,7 +155,7 @@ if 'localhost' in sonar_server_url or '127.0.0' in sonar_server_url:
     'sudo', 'machinectl', 'reboot', 'sonarqube',
   ], check=False)
   if r.returncode == 0:
-    delay_until_url_available(sonar_server_url, 60)
+    delay_until_url_available(sonar_server_url, seconds_to_wait_for_server_restart)
 
 
 # Step 3 - Sonar-Scan the rust code!
@@ -174,7 +177,7 @@ if not url_is_alive(sonar_server_url) and ('localhost' in sonar_server_url or '1
       sys.executable, 'run_sonarqube_server.py'
   ], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
   print(f'systemd-run returned {r.returncode}')
-  delay_until_url_available(sonar_server_url, 60)
+  delay_until_url_available(sonar_server_url, seconds_to_wait_for_server_restart)
 
 
 if not 'SONAR_TOKEN' in os.environ:
