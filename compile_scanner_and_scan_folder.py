@@ -82,7 +82,7 @@ def ensure_sonar_scanner_available():
 
 def url_is_alive(url):
   try:
-    with urllib.request.urlopen(sonar_scanner_zip_url, timeout=1) as response:
+    with urllib.request.urlopen(url, timeout=1) as response:
       unused = response.read()
       return True
   except:
