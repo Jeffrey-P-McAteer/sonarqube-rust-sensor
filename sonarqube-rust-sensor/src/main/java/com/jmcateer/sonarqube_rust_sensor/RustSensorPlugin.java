@@ -8,7 +8,7 @@ public class RustSensorPlugin implements org.sonar.api.Plugin
     @Override
     public void define(Context context) {
         // TODO
-        System.out.println("\n\nHello Sonar-Scanner Plugin!\n\n");
+        //System.out.println("\n\nHello Sonar-Scanner Plugin!\n\n");
     }
 
 }

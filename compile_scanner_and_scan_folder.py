@@ -80,6 +80,29 @@ def ensure_sonar_scanner_available():
 
   return shutil.which(sonar_script_name)
 
+def url_is_alive(url):
+  try:
+    with urllib.request.urlopen(sonar_scanner_zip_url, timeout=1) as response:
+      unused = response.read()
+      return True
+  except:
+    pass
+  return False
+
+def delay_until_url_available(url, max_seconds):
+  for i in range(0, int(max_seconds)):
+    time.sleep(1)
+    print('+', flush=True, end='')
+    if url_is_alive(url):
+      print()
+      print(f'{url} is up!')
+      return
+  print()
+  print(f'WARNING: {url} did not come online in {max_seconds} seconds!')
+
+
+
+
 # Step 1 - Compile the maven project under ./sonarqube-rust-sensor/
 
 mvn_proj_folder = os.path.join(REPO_ROOT, 'sonarqube-rust-sensor')
@@ -107,6 +130,9 @@ if not os.path.exists(CONTAINER_ROOT):
   print(f'Fatal Error: {CONTAINER_ROOT} does not exist! Please execute "uv run run_sonarqube_server.py" to build the server')
   sys.exit(1)
 
+sonar_server_url = os.environ.get('SONAR_SERVER_URL', 'http://127.0.0.1:9000')
+print(f'SONAR_SERVER_URL = {sonar_server_url}')
+
 container_plugin_folder = os.path.join(CONTAINER_ROOT, 'usr', 'share', 'webapps', 'sonarqube', 'extensions', 'plugins')
 print(f'container_plugin_folder = {container_plugin_folder}')
 pre_existing_jar = scan_for_pieces(container_plugin_folder, ['sonarqube', 'rust', 'sensor', '.jar'])
@@ -116,15 +142,17 @@ if not pre_existing_jar is None and os.path.exists(pre_existing_jar):
   ], check=True)
 
 subprocess.run([
-  'sudo', 'cp', sonar_rust_sensor_jar, container_plugin_folder
+ 'sudo', 'cp', sonar_rust_sensor_jar, container_plugin_folder
 ], check=True)
 
 # Tell machinectl to reboot container
-subprocess.run([
-  'sudo', 'machinectl', 'reboot', 'sonarqube',
-], check=True)
-
-time.sleep(12)
+if 'localhost' in sonar_server_url or '127.0.0' in sonar_server_url:
+  print(f'Rebooting container "sonarqube"...')
+  r = subprocess.run([
+    'sudo', 'machinectl', 'reboot', 'sonarqube',
+  ], check=False)
+  if r.returncode == 0:
+    delay_until_url_available(sonar_server_url, 36)
 
 
 # Step 3 - Sonar-Scan the rust code!
@@ -134,8 +162,20 @@ print(f'ss_script = {ss_script}')
 rust_project_folder_to_scan = os.environ.get('FOLDER_TO_SCAN', os.path.join(REPO_ROOT, 'example_rust_code'))
 print(f'FOLDER_TO_SCAN = {rust_project_folder_to_scan}')
 
-sonar_server_url = os.environ.get('SONAR_SERVER_URL', 'http://127.0.0.1:9000')
-print(f'SONAR_SERVER_URL = {sonar_server_url}')
+if not url_is_alive(sonar_server_url) and ('localhost' in sonar_server_url or '127.0.0' in sonar_server_url):
+  print(f'Server at {sonar_server_url} did not respond, spawning run_sonarqube_server.py using systemd-run in the background...')
+  r = subprocess.run([
+    'systemd-run',
+      '--user',
+      '--quiet',
+      '--unit=run_sonarqube_server_py',
+      f'--working-directory={REPO_ROOT}',
+      '--collect',
+      sys.executable, 'run_sonarqube_server.py'
+  ], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+  print(f'systemd-run returned {r.returncode}')
+  delay_until_url_available(sonar_server_url, 32)
+
 
 if not 'SONAR_TOKEN' in os.environ:
   print('WARNING: SONAR_TOKEN not set, ensure sonar.token is specified in your host or project sonar-*.properties file!')
