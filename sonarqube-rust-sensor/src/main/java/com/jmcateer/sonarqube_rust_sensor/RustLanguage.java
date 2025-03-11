@@ -1,5 +1,7 @@
 package com.jmcateer.sonarqube_rust_sensor;
 
+import java.util.ArrayList;
+
 import org.sonar.api.config.Configuration;
 import org.sonar.api.resources.AbstractLanguage;
 
@@ -25,7 +27,16 @@ public final class RustLanguage extends AbstractLanguage {
         if (suffixes == null || suffixes.length == 0) {
             return DEFAULT_FILE_SUFFIXES;
         }
-        return suffixes;
+        ArrayList<String> nonempty_suffixes = new ArrayList<String>(suffixes.length);
+        for (int i=0; i<suffixes.length; i+=1) {
+            if (suffixes[i].length() >= 1) {
+                nonempty_suffixes.add(suffixes[i]);
+            }
+        }
+        if (nonempty_suffixes.size() == 0) {
+            return DEFAULT_FILE_SUFFIXES;
+        }
+        return nonempty_suffixes.toArray(new String[nonempty_suffixes.size()]);
     }
 
     @Override

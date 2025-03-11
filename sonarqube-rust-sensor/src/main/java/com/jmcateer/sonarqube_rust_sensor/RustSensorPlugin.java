@@ -22,6 +22,18 @@ public class RustSensorPlugin implements Plugin
                     .build()
         );
         context.addExtension(
+            PropertyDefinition.builder("sonar.lang.patterns.rust")
+                    .name("Rust file patterns")
+                    .description(
+                        "List of patterns to files which hold rust code (default **/*.rs,**/*.RS,**/*.toml,**/*.TOML)"
+                    )
+                    .multiValues(true)
+                    .type(PropertyType.STRING)
+                    .defaultValue("**/*.rs,**/*.RS,**/*.toml,**/*.TOML")
+                    .build()
+        );
+
+        context.addExtension(
             PropertyDefinition.builder("sonar.rust.clippy-lints.skip")
                     .name("Clippy lints to skip")
                     .description(
