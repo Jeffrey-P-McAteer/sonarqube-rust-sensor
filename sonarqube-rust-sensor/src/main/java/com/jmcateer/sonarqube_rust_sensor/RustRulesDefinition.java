@@ -66,7 +66,8 @@ public class RustRulesDefinition implements RulesDefinition {
                             .setName("rule1")
                             .setHtmlDescription("<p>A Test Rule</p>")
                             .addTags("rule1")
-                            .setSeverity("MINOR" /* no idea what constants go here */);
+                            .setActivatedByDefault(true)
+                            .setSeverity("MAJOR" /* no idea what constants go here */);
 
             DebtRemediationFunction func = new DefaultDebtRemediationFunction(
                 DebtRemediationFunction.Type.CONSTANT_ISSUE, // TODO lookup value
@@ -75,7 +76,7 @@ public class RustRulesDefinition implements RulesDefinition {
             );
 
             x1Rule.setDebtRemediationFunction(func);
-            x1Rule.setType(RuleType.CODE_SMELL);
+            x1Rule.setType(RuleType.BUG);
             x1Rule.setActivatedByDefault(true);
 
             repository.done();

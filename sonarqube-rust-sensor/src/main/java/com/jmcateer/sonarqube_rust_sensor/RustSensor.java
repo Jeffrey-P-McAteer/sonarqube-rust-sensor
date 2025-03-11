@@ -51,14 +51,16 @@ public class RustSensor implements Sensor {
                     for (final Filler filler : fillers) {
                       filler.fill(inputFile, context, ctx);
                     }*/
-                    if (test_random.nextDouble() < 0.80) {
+                    double d = test_random.nextDouble();
+                    LOGGER.warn("test_random.nextDouble() returned {} for file {}", d, inputFile);
+                    if (d < 0.80) {
                       LOGGER.warn("BEGIN Rule Key rust.rule1 = {}", RuleKey.of("rust", "rule1"));
                       // Synthesize a fake issue on line 1 of this file
                       final NewIssue newIssue = context.newIssue().forRule(RuleKey.of("rust", "rule1"));
                       final NewIssueLocation loc = newIssue.newLocation().on(inputFile).message("This is a Random Issue! Your lucky number is "+test_random.nextDouble()+".");
                       loc.at(inputFile.selectLine(1));
                       newIssue.at(loc).save();
-                      LOGGER.warn("BEGIN Rule Key rust.rule1 = {}", RuleKey.of("rust", "rule1"));
+                      LOGGER.warn("END (after newIssue.at(loc).save()) Rule Key rust.rule1 = {}", RuleKey.of("rust", "rule1"));
                     }
                     else {
                       LOGGER.warn("Did not report on file {}", inputFile);

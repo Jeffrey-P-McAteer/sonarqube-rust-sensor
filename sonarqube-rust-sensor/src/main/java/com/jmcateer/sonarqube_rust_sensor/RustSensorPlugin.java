@@ -49,7 +49,8 @@ public class RustSensorPlugin implements Plugin
             RustLanguage.class,
             RustRulesDefinition.class,
             RustQualityProfile.class,
-            RustSensor.class
+            RustSensor.class,
+            RustDefaultQualityProfile.class
         );
 
         // TODO see https://github.com/gretard/sonar-sql-plugin/blob/master/src/sonar-sql-plugin/src/main/java/org/sonar/plugins/sql/SQLPlugin.java#L109
