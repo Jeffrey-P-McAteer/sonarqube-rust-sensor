@@ -17,7 +17,13 @@ import org.sonar.api.rules.RuleType;
 import org.sonar.plugins.sql.models.rules.SqlRules;
 */
 
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
+
+
 public class RustRulesDefinition implements RulesDefinition {
+
+    private static final Logger LOGGER = Loggers.get(RustRulesDefinition.class);
 
     @Override
     public void define(Context context) {
@@ -63,9 +69,9 @@ public class RustRulesDefinition implements RulesDefinition {
                             .setSeverity("INFO" /* no idea what constants go here */);
 
             DebtRemediationFunction func = new DefaultDebtRemediationFunction(
-                DebtRemediationFunction.Type.LINEAR, // TODO lookup value
-                "", // TODO values for gapMultiplier,
-                null // TODO values for baseEffort;
+                DebtRemediationFunction.Type.CONSTANT_ISSUE, // TODO lookup value
+                null, // TODO values for gapMultiplier,
+                "0d 0h 5min" // TODO values for baseEffort;
             );
 
             x1Rule.setDebtRemediationFunction(func);
@@ -77,8 +83,8 @@ public class RustRulesDefinition implements RulesDefinition {
 
             // TODO reach out to clippy for a list of rules
         }
-        catch (Exception ex) {
-            System.err.println(""+ex);
+        catch (Throwable e) {
+          LOGGER.warn("Unexpected exception in RustRulesDefinition::define ", e);
         }
     }
 }
