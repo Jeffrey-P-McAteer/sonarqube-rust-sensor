@@ -11,7 +11,21 @@ fn main() {
         }
     }
 
+    sonic_rs::from_str::<sonic_rs::Value>(&input_json_string); // Unused error should show in report
+
+    let mut unused_variable = 5;
+
+
 }
+
+async fn foo() {}
+
+fn bar() {
+  let x = async {
+    foo()
+  };
+}
+
 
 #[cfg(test)]
 mod our_tests {
