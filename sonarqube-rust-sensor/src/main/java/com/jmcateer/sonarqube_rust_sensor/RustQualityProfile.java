@@ -19,6 +19,7 @@ public class RustQualityProfile implements BuiltInQualityProfilesDefinition {
         }*/
 
         // TODO read from cargo-clippy's list of rules
+        profile.activateRule("rust", "rule1");
 
         profile.done();
     }
