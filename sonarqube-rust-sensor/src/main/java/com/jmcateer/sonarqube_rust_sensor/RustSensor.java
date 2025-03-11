@@ -34,6 +34,7 @@ public class RustSensor implements Sensor {
       final Iterable<InputFile> files = fs.inputFiles(fs.predicates().all());
       final java.util.Random test_random = new java.util.Random();
       final java.util.ArrayList<String> test_files = new java.util.ArrayList<String>();
+      final java.util.ArrayList<String> completed_test_files = new java.util.ArrayList<String>();
       files.forEach(inputFile -> {
             test_files.add(""+inputFile);
             service.execute(
@@ -66,20 +67,27 @@ public class RustSensor implements Sensor {
                   catch (Throwable e) {
                       LOGGER.warn("Unexpected exception while analyzing file: " + inputFile, e);
                   }
+                  completed_test_files.add(""+inputFile);
                 }
               }
             );
         });
 
         LOGGER.debug("RustSensor has found {} files", test_files.size());
+        LOGGER.debug("ONE completed_test_files = {} files", completed_test_files.size());
 
         service.shutdown();
+
+        LOGGER.debug("TWO completed_test_files = {} files", completed_test_files.size());
         try {
             service.awaitTermination(36, TimeUnit.SECONDS);
+            LOGGER.debug("THREE completed_test_files = {} files", completed_test_files.size());
             service.shutdownNow();
         }
         catch (Throwable e) {
             LOGGER.warn("Unexpected exception while waiting for executor service to finish.", e);
         }
+        LOGGER.debug("FOUR completed_test_files = {} files", completed_test_files.size());
+
     }
 }
