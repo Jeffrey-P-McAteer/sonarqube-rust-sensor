@@ -246,9 +246,9 @@ def setup_container_async():
   if not flag_passed('pacman-key-setup'):
     di0(run_in_container('pacman-key', '--init'))
     di0(run_in_container('pacman-key', '--populate', 'archlinux'))
+    di0(run_in_container('pacman', '-Syu')) # Sync & upgrade all
     pass_flag('pacman-key-setup')
-
-  if random.choice([True, False, False, False, False, False, False, False]):
+  elif random.choice([True, False, False, False, False, False, False, False]):
     print(f'Running regular maitenence package sync + upgrade')
     di0(run_in_container('pacman', '-Syu')) # Sync & upgrade all
 
