@@ -5,6 +5,7 @@ import os
 import sys
 import urllib.request
 import html.parser
+import json
 
 class ClippyRule:
   # Lint group is like "correctness"
@@ -16,8 +17,15 @@ class ClippyRule:
     self.lint_group = lint_group
     self.lint_level = lint_level
   def __repr__(self):
-    return f'ClippyRule({self.rule_id}, {self.rule_description_html})'
-
+    return f'ClippyRule(id={self.rule_id}, lint_group={self.lint_group}, lint_level={self.lint_level} description={self.rule_description_html})'
+  def to_dict(self):
+    return {
+      'rule_id': self.rule_id,
+      'rule_name': self.rule_name,
+      'rule_description_html': self.rule_description_html,
+      'lint_group': self.lint_group,
+      'lint_level': self.lint_level,
+    }
 
 class HTML_To_ClippyRule_Parser(html.parser.HTMLParser):
 
@@ -95,5 +103,17 @@ with urllib.request.urlopen(lints_html_url) as request:
 parser = HTML_To_ClippyRule_Parser()
 parser.feed(lints_html)
 
+json_rule_dictionaries = list()
 for rule in parser.parsed_rules:
   print(f'{rule}')
+  json_rule_dictionaries.append(rule.to_dict())
+
+resources_folder = os.path.join('sonarqube-rust-sensor', 'src', 'main', 'resources')
+os.makedirs(resources_folder, exist_ok=True)
+clippy_rules_json_path = os.path.join(resources_folder, 'clippy-rules.json')
+
+with open(clippy_rules_json_path, 'w') as fd:
+  fd.write(json.dumps(json_rule_dictionaries, indent=2))
+
+print(f'See {clippy_rules_json_path}')
+

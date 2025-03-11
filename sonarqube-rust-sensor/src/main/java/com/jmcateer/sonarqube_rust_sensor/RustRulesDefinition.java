@@ -2,6 +2,9 @@ package com.jmcateer.sonarqube_rust_sensor;
 
 import java.util.List;
 import java.util.Objects;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
 
 import org.sonar.api.server.rule.RulesDefinition;
 
@@ -20,6 +23,9 @@ import org.sonar.plugins.sql.models.rules.SqlRules;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 
+import org.json.JSONObject;
+import org.json.JSONArray;
+import org.json.JSONTokener;
 
 public class RustRulesDefinition implements RulesDefinition {
 
@@ -28,36 +34,6 @@ public class RustRulesDefinition implements RulesDefinition {
     @Override
     public void define(Context context) {
         try {
-            /*
-            List<SqlRules> rules = SQLDialectRules.INSTANCE.getGroupedRules();
-
-            for (SqlRules rulesDef : rules) {
-                NewRepository repository =
-                        context.createRepository(rulesDef.getRepoKey(), Constants.languageKey)
-                                .setName(rulesDef.getRepoName());
-
-                for (org.sonar.plugins.sql.models.rules.Rule rule : rulesDef.getRule()) {
-                    NewRule x1Rule =
-                            repository
-                                    .createRule(rule.getKey())
-                                    .setName(rule.getName())
-                                    .setHtmlDescription(rule.getDescription())
-                                    .addTags(rule.getTag())
-                                    .setSeverity(rule.getSeverity());
-                    String gapMultiplier = rule.getDebtRemediationFunctionCoefficient();
-                    String baseEffort = rule.getRemediationFunctionBaseEffort();
-                    DebtRemediationFunction func =
-                            new DefaultDebtRemediationFunction(
-                                    DebtRemediationFunction.Type.valueOf(rule.getRemediationFunction()),
-                                    (Objects.equals(gapMultiplier, "")) ? null : gapMultiplier,
-                                    (Objects.equals(baseEffort, "")) ? null : baseEffort);
-                    x1Rule.setDebtRemediationFunction(func);
-                    x1Rule.setType(RuleType.valueOf(rule.getRuleType()));
-                    x1Rule.setActivatedByDefault(true);
-                }
-                repository.done();
-            }
-            */
 
             NewRepository repository = context.createRepository("rust", Constants.LANGUAGE_KEY).setName("rust");
             NewRule x1Rule =
@@ -81,11 +57,30 @@ public class RustRulesDefinition implements RulesDefinition {
 
             repository.done();
 
+            ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+            InputStream inputStream = classloader.getResourceAsStream("clippy-rules.json");
+            InputStreamReader streamReader = new InputStreamReader(inputStream, java.nio.charset.StandardCharsets.UTF_8);
+            BufferedReader reader = new BufferedReader(streamReader);
+
+            JSONTokener tokener = new JSONTokener(reader);
+            JSONArray json = new JSONArray(tokener);
+
+            LOGGER.warn("Read json={}", json);
+
+            for (int i=0; i<json.length(); i+=1) {
+                JSONObject rule_o = json.getJSONObject(i);
+                String rule_id = rule_o.getString("rule_id");
+                String rule_name = rule_o.getString("rule_name");
+                String rule_description_html = rule_o.getString("rule_description_html");
+                String lint_group = rule_o.getString("lint_group");
+                String lint_level = rule_o.getString("lint_level");
+                // TODO use this to create rule in ^^ repo and save it
+            }
 
             // TODO reach out to clippy for a list of rules
         }
         catch (Throwable e) {
-          LOGGER.warn("Unexpected exception in RustRulesDefinition::define ", e);
+          LOGGER.warn("Unexpected exception in RustRulesDefinition::define {}", e);
         }
     }
 }
