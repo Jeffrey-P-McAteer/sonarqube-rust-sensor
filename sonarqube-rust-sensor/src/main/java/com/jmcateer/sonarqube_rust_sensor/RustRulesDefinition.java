@@ -59,14 +59,14 @@ public class RustRulesDefinition implements RulesDefinition {
             }
             */
 
-            NewRepository repository = context.createRepository("rust", Constants.LANGUAGE_KEY).setName("rule_repo1");
+            NewRepository repository = context.createRepository("rust", Constants.LANGUAGE_KEY).setName("rust");
             NewRule x1Rule =
                     repository
                             .createRule("rule1")
                             .setName("rule1")
                             .setHtmlDescription("<p>A Test Rule</p>")
                             .addTags("rule1")
-                            .setSeverity("INFO" /* no idea what constants go here */);
+                            .setSeverity("MINOR" /* no idea what constants go here */);
 
             DebtRemediationFunction func = new DefaultDebtRemediationFunction(
                 DebtRemediationFunction.Type.CONSTANT_ISSUE, // TODO lookup value
