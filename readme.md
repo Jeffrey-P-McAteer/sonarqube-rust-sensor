@@ -27,13 +27,19 @@ uv run compile_scanner_and_scan_folder.py
 # Testing
 
 ```bash
-TODO
+uv run compile_scanner_and_scan_folder.py
 ```
 
 # Usage
 
 ```bash
-TODO
+uv run compile_scanner_and_scan_folder.py
+#
+# Copy the file ./sonarqube-rust-sensor/target/sonarqube_rust_sensor-1.0-SNAPSHOT.jar
+# To the folder <SONAR_INSTALL_DIR>/extensions/plugins and re-start the server.
+#
+# Deployment complete! No modifications to your scanned repo's sonar-project.properties required.
+#
 ```
 
 # Research
