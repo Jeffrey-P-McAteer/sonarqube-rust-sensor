@@ -36,26 +36,6 @@ public class RustRulesDefinition implements RulesDefinition {
         try {
 
             NewRepository repository = context.createRepository("rust", Constants.LANGUAGE_KEY).setName("rust");
-            NewRule x1Rule =
-                    repository
-                            .createRule("rule1")
-                            .setName("rule1")
-                            .setHtmlDescription("<p>A Test Rule</p>")
-                            .addTags("rule1")
-                            .setActivatedByDefault(true)
-                            .setSeverity("MAJOR" /* no idea what constants go here */);
-
-            DebtRemediationFunction func = new DefaultDebtRemediationFunction(
-                DebtRemediationFunction.Type.CONSTANT_ISSUE, // TODO lookup value
-                null, // TODO values for gapMultiplier,
-                "0d 0h 5min" // TODO values for baseEffort;
-            );
-
-            x1Rule.setDebtRemediationFunction(func);
-            x1Rule.setType(RuleType.BUG);
-            x1Rule.setActivatedByDefault(true);
-
-            repository.done();
 
             InputStream inputStream = RustRulesDefinition.class.getResourceAsStream("clippy-rules.json");
             InputStreamReader streamReader = new InputStreamReader(inputStream, java.nio.charset.StandardCharsets.UTF_8);
@@ -67,15 +47,41 @@ public class RustRulesDefinition implements RulesDefinition {
             LOGGER.warn("Read json={}", json);
 
             for (int i=0; i<json.length(); i+=1) {
-                JSONObject rule_o = json.getJSONObject(i);
-                String rule_id = rule_o.getString("rule_id");
-                String rule_name = rule_o.getString("rule_name");
-                String rule_description_html = rule_o.getString("rule_description_html");
-                String lint_group = rule_o.getString("lint_group");
-                String lint_level = rule_o.getString("lint_level");
-                // TODO use this to create rule in ^^ repo and save it
-                LOGGER.warn("Read rule_id={}", rule_id);
+                try {
+                    JSONObject rule_o = json.getJSONObject(i);
+                    String rule_id = rule_o.getString("rule_id");
+                    String rule_name = rule_o.getString("rule_name");
+                    String rule_description_html = rule_o.getString("rule_description_html");
+                    String lint_group = rule_o.getString("lint_group");
+                    String lint_level = rule_o.getString("lint_level");
+
+                    LOGGER.warn("Defining rule_id={}", rule_id);
+
+                    NewRule x1Rule =
+                            repository
+                                    .createRule(rule_id)
+                                    .setName(rule_id)
+                                    .setHtmlDescription(rule_description_html)
+                                    .addTags(lint_group)
+                                    .setActivatedByDefault(true)
+                                    .setSeverity("MINOR" /* no idea what constants go here */);
+
+                    DebtRemediationFunction func = new DefaultDebtRemediationFunction(
+                        DebtRemediationFunction.Type.CONSTANT_ISSUE, // TODO lookup value
+                        null, // TODO values for gapMultiplier,
+                        "0d 0h 5min" // TODO values for baseEffort;
+                    );
+
+                    x1Rule.setDebtRemediationFunction(func);
+                    x1Rule.setType(RuleType.BUG);
+                    x1Rule.setActivatedByDefault(true);
+                }
+                catch (Throwable e) {
+                  LOGGER.warn("Unexpected exception in RustRulesDefinition::define reading json[{}] {}", i, e);
+                }
             }
+
+            repository.done();
 
             // TODO reach out to clippy for a list of rules
         }

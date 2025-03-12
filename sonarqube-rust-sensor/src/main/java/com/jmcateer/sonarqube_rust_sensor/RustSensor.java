@@ -55,7 +55,7 @@ public class RustSensor implements Sensor {
                     LOGGER.warn("test_random.nextDouble() returned {} for file {}", d, inputFile);
                     if (d < 0.80) {
                       // Synthesize a fake issue on line 1 of this file
-                      final NewIssue newIssue = context.newIssue().forRule(RuleKey.of("rust", "rule1"));
+                      final NewIssue newIssue = context.newIssue().forRule(RuleKey.of("rust", "approx_constant"));
                       final NewIssueLocation loc = newIssue.newLocation().on(inputFile).message("This is a Random Issue! Your lucky number is "+test_random.nextDouble()+".");
                       loc.at(inputFile.selectLine(1));
                       newIssue.at(loc).save();
