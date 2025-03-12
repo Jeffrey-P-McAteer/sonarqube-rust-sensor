@@ -25,26 +25,9 @@ public class RustQualityProfile implements BuiltInQualityProfilesDefinition {
         final NewBuiltInQualityProfile profile = context.createBuiltInQualityProfile("Rust rules", Constants.LANGUAGE_KEY)
                                                         .setDefault(true);
 
-        //profile.activateRule("rust", "rule1");
-        InputStream inputStream = RustQualityProfile.class.getResourceAsStream("clippy-rules.json");
-        InputStreamReader streamReader = new InputStreamReader(inputStream, java.nio.charset.StandardCharsets.UTF_8);
-        BufferedReader reader = new BufferedReader(streamReader);
-
-        JSONTokener tokener = new JSONTokener(reader);
-        JSONArray json = new JSONArray(tokener);
-
-        LOGGER.warn("Read json={}", json);
-
-        for (int i=0; i<json.length(); i+=1) {
-            try {
-                JSONObject rule_o = json.getJSONObject(i);
-                String rule_id = rule_o.getString("rule_id");
-                profile.activateRule("rust", rule_id);
-            }
-            catch (Throwable e) {
-              LOGGER.warn("Unexpected exception in RustQualityProfile::define reading json[{}] {}", i, e);
-            }
-        }
+        ReadAllClippyRules.WithAllRules((rule_id, rule_name, rule_description_html, lint_group, lint_level) -> {
+            profile.activateRule(Constants.LANGUAGE_KEY, rule_id);
+        });
 
         profile.done();
     }
