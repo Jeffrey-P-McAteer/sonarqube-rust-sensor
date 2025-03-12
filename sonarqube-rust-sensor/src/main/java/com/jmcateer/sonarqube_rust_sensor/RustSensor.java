@@ -101,54 +101,6 @@ public class RustSensor implements Sensor {
         });
       }
 
-      final java.util.Random test_random = new java.util.Random();
-      final java.util.ArrayList<String> test_files = new java.util.ArrayList<String>();
-      final java.util.ArrayList<String> completed_test_files = new java.util.ArrayList<String>();
-
-      files.forEach(inputFile -> {
-            test_files.add(""+inputFile);
-            service.execute(
-              new Runnable() {
-                @SuppressWarnings("deprecation")
-                @Override
-                public void run() {
-                  try {
-                    if (inputFile.file().length() > 1024 * 1024) {
-                        LOGGER.debug("Skipping {} file as its size exceeds {} bytes.", inputFile, 1024 * 1024);
-                        return;
-                    }
-                    /*final AntlrContext ctx = sqlDialect.parse(inputFile.contents(), customRules);
-                    for (final Filler filler : fillers) {
-                      filler.fill(inputFile, context, ctx);
-                    }*/
-                    double d = test_random.nextDouble();
-                    LOGGER.warn("test_random.nextDouble() returned {} for file {}", d, inputFile);
-                    if (d < 0.80) {
-                      // Synthesize a fake issue on line 1 of this file
-                      final NewIssue newIssue = context.newIssue().forRule(RuleKey.of("rust", "approx_constant"));
-                      final NewIssueLocation loc = newIssue.newLocation().on(inputFile).message("This is a Random Issue! Your lucky number is "+test_random.nextDouble()+".");
-                      loc.at(inputFile.selectLine(1));
-                      newIssue.at(loc).save();
-                    }
-                  }
-                  catch (Throwable e) {
-                      LOGGER.warn("Unexpected exception while analyzing file: {} - {}", inputFile, e);
-                  }
-                  completed_test_files.add(""+inputFile);
-                }
-              }
-            );
-        });
-
-        service.shutdown();
-        try {
-            service.awaitTermination(36, TimeUnit.SECONDS);
-            service.shutdownNow();
-        }
-        catch (Throwable e) {
-            LOGGER.warn("Unexpected exception while waiting for executor service to finish.", e);
-        }
-
     }
 
     private static InputFile matchingInputFile(ArrayList<InputFile> files_list, String file_path) {
