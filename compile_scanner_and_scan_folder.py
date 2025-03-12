@@ -184,10 +184,14 @@ print(f'FOLDER_TO_SCAN = {rust_project_folder_to_scan}')
 
 if not url_is_alive(sonar_server_url) and ('localhost' in sonar_server_url or '127.0.0' in sonar_server_url):
   print(f'Server at {sonar_server_url} did not respond, spawning run_sonarqube_server.py using systemd-run in the background...')
+  env_var_args = []
+  for k,v in os.environ.items():
+    env_var_args.append('-E')
+    env_var_args.append(f'{k}={v}')
   r = subprocess.run([
     'systemd-run',
       '--user',
-      '--quiet',
+      '--quiet', ] + env_var_args + [ # Inject environment arguments to use in spawned process
       '--unit=run_sonarqube_server_py',
       f'--working-directory={REPO_ROOT}',
       '--collect',
