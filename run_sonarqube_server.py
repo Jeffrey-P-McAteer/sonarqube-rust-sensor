@@ -246,15 +246,15 @@ def setup_container_async():
   if not flag_passed('pacman-key-setup'):
     di0(run_in_container('pacman-key', '--init'))
     di0(run_in_container('pacman-key', '--populate', 'archlinux'))
-    di0(run_in_container('pacman', '-Syu')) # Sync & upgrade all
+    di0(run_in_container('pacman', '-Syu', '--noconfirm')) # Sync & upgrade all
     pass_flag('pacman-key-setup')
   elif random.choice([True, False, False, False, False, False, False, False]):
     print(f'Running regular maitenence package sync + upgrade')
-    di0(run_in_container('pacman', '-Syu')) # Sync & upgrade all
+    di0(run_in_container('pacman', '-Syu', '--noconfirm')) # Sync & upgrade all
 
-  if not flag_passed('pacman-install-base-packaged'):
+  if not flag_passed('pacman-install-base-packages'):
     di0(run_in_container('pacman', '-S', '--noconfirm', 'base-devel', 'git', 'vim', 'sudo'))
-    pass_flag('pacman-install-base-packaged')
+    pass_flag('pacman-install-base-packages')
 
   # Setup 'nobody' as an admin because sure why not it already exists
   if not flag_passed('setup-nobody-user'):
@@ -290,7 +290,7 @@ Defaults:nobody !tty_tickets
 
   # yay -S <aur-pkg-name> is now available; ensure we run as sudo-nobody!
   if not flag_passed('install-sonarqube-bin'):
-    di0(run_nobody_shell('yay -S sonarqube-bin'))
+    di0(run_nobody_shell('yay -S --noconfirm sonarqube-bin'))
     di0(run_in_container('systemctl', 'enable', '--now', 'sonarqube.service'))
     pass_flag('install-sonarqube-bin')
 
