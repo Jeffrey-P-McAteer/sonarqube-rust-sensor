@@ -198,7 +198,7 @@ def run_in_container(*cmd):
 def run_in_container_silent(*cmd):
   cmd_txt = ' '.join(x for x in cmd if not x is None)
   cmd_list = [x for x in cmd if not x is None]
-  print(f'>>> {cmd_txt}')
+  # print(f'>>> {cmd_txt}')
   r = subprocess.run([
     'systemd-run',
       '--machine', 'sonarqube',
