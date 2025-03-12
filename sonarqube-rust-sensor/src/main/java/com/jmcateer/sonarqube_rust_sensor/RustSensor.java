@@ -1,6 +1,7 @@
 package com.jmcateer.sonarqube_rust_sensor;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -37,11 +38,14 @@ public class RustSensor implements Sensor {
       //final Iterable<InputFile> files = fs.inputFiles(fs.predicates().hasLanguage(Constants.LANGUAGE_KEY));
       final Iterable<InputFile> files = fs.inputFiles(fs.predicates().all());
 
+      final ArrayList<InputFile> files_list = new ArrayList<InputFile>();
+      fs.inputFiles(fs.predicates().all()).forEach(f -> files_list.add(f) );
+
       final String clippy_json_output_path = config.get(Constants.CFG_CLIPPY_JSON_OUTPUT).orElse(Constants.CFG_CLIPPY_JSON_OUTPUT_DEFAULTVAL);
 
       // If clippy_json_output_path is not in the filesystem we spawn a process to generate it before continuing w/ analysis
       final String[] clippy_json_string_val = new String[]{null};
-      files.forEach(inputFile -> {
+      files_list.forEach(inputFile -> {
         if (clippy_json_output_path.equals( inputFile.path().getFileName().toString() )) {
           try {
             clippy_json_string_val[0] = new BufferedReader(new InputStreamReader( inputFile.inputStream() )).lines().collect(Collectors.joining("\n"));
@@ -54,11 +58,46 @@ public class RustSensor implements Sensor {
 
       if (clippy_json_string_val[0] == null) {
         // Run command & capture output, storing directly into the string
+        String[] clippy_command = new String[]{
+          "cargo", "clippy", "--offline", "--quiet", "--message-format=json"
+        };
+
+        try {
+
+          Runtime rt = Runtime.getRuntime();
+          Process proc = rt.exec(clippy_command);
+
+          BufferedReader stdInput = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+          BufferedReader stdError = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
+
+          String s = null;
+          while ((s = stdInput.readLine()) != null) {
+            if (clippy_json_string_val[0] == null) {
+              clippy_json_string_val[0] = s;
+            }
+            else {
+              clippy_json_string_val[0] = clippy_json_string_val[0] + "\n" + s;
+            }
+          }
+          while ((s = stdError.readLine()) != null) {
+            LOGGER.warn("StdError Running Clippy: {}", s);
+          }
+        }
+        catch (java.io.IOException e) {
+          LOGGER.warn("Unexpected exception while running {} {}", String.join(" ", clippy_command), e);
+        }
+
       }
 
       if (clippy_json_string_val[0] != null) {
-        ReadReportedClippyLintsJson.ReadReported(clippy_json_string_val[0], (_rule_id, _rule_name, _rule_description_html, _lint_group, _lint_level, _file_path, _file_line_number, _additional_clippy_messages) -> {
-          // TODO
+        ReadReportedClippyLintsJson.ReadReported(clippy_json_string_val[0], (rule_id, rule_name, rule_description_html, lint_group, lint_level, file_path, file_line_number, additional_clippy_messages) -> {
+          InputFile lint_inputFile = matchingInputFile(files_list, file_path);
+          if (lint_inputFile != null) {
+            final NewIssue newIssue = context.newIssue().forRule(RuleKey.of(Constants.LANGUAGE_KEY, rule_id));
+            final NewIssueLocation loc = newIssue.newLocation().on(lint_inputFile).message(additional_clippy_messages);
+            loc.at(lint_inputFile.selectLine(file_line_number));
+            newIssue.at(loc).save();
+          }
         });
       }
 
@@ -101,21 +140,24 @@ public class RustSensor implements Sensor {
             );
         });
 
-        LOGGER.debug("RustSensor has found {} files", test_files.size());
-        LOGGER.debug("ONE completed_test_files = {} files", completed_test_files.size());
-
         service.shutdown();
-
-        LOGGER.debug("TWO completed_test_files = {} files", completed_test_files.size());
         try {
             service.awaitTermination(36, TimeUnit.SECONDS);
-            LOGGER.debug("THREE completed_test_files = {} files", completed_test_files.size());
             service.shutdownNow();
         }
         catch (Throwable e) {
             LOGGER.warn("Unexpected exception while waiting for executor service to finish.", e);
         }
-        LOGGER.debug("FOUR completed_test_files = {} files", completed_test_files.size());
 
     }
+
+    private static InputFile matchingInputFile(ArrayList<InputFile> files_list, String file_path) {
+      for (int i=0; i<files_list.size(); i+=1) {
+        if (files_list.get(i).path().toString().endsWith(file_path)) {
+          return files_list.get(i);
+        }
+      }
+      return null;
+    }
+
 }
