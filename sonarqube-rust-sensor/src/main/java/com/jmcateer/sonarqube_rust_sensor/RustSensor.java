@@ -16,6 +16,10 @@ import org.sonar.api.batch.sensor.issue.NewIssue;
 import org.sonar.api.batch.sensor.issue.NewIssueLocation;
 import org.sonar.api.rule.RuleKey;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.stream.Collectors;
+
 public class RustSensor implements Sensor {
 
     private static final Logger LOGGER = Loggers.get(RustSensor.class);
@@ -36,7 +40,27 @@ public class RustSensor implements Sensor {
       final String clippy_json_output_path = config.get(Constants.CFG_CLIPPY_JSON_OUTPUT).orElse(Constants.CFG_CLIPPY_JSON_OUTPUT_DEFAULTVAL);
 
       // If clippy_json_output_path is not in the filesystem we spawn a process to generate it before continuing w/ analysis
+      final String[] clippy_json_string_val = new String[]{null};
+      files.forEach(inputFile -> {
+        if (clippy_json_output_path.equals( inputFile.path().getFileName().toString() )) {
+          try {
+            clippy_json_string_val[0] = new BufferedReader(new InputStreamReader( inputFile.inputStream() )).lines().collect(Collectors.joining("\n"));
+          }
+          catch (java.io.IOException e) {
+            LOGGER.warn("Unexpected exception while reading file: {} - {}", inputFile, e);
+          }
+        }
+      });
 
+      if (clippy_json_string_val[0] == null) {
+        // Run command & capture output, storing directly into the string
+      }
+
+      if (clippy_json_string_val[0] != null) {
+        ReadReportedClippyLintsJson.ReadReported(clippy_json_string_val[0], (_rule_id, _rule_name, _rule_description_html, _lint_group, _lint_level, _file_path, _file_line_number, _additional_clippy_messages) -> {
+          // TODO
+        });
+      }
 
       final java.util.Random test_random = new java.util.Random();
       final java.util.ArrayList<String> test_files = new java.util.ArrayList<String>();
