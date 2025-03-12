@@ -27,7 +27,7 @@ import zstandard
 
 if os.getuid() != 0:
   print('Not running as root, re-executing self using sudo...')
-  sys.exit(subprocess.run(['sudo', sys.executable] + sys.argv).returncode)
+  sys.exit(subprocess.run(['sudo', '--preserve-env', sys.executable] + sys.argv).returncode)
 
 class ParseAllLinks(html.parser.HTMLParser):
   def __init__(self, *args, **kwargs):

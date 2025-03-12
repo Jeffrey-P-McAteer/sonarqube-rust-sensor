@@ -32,9 +32,16 @@ public class RustSensor implements Sensor {
       final org.sonar.api.batch.fs.FileSystem fs = context.fileSystem();
       //final Iterable<InputFile> files = fs.inputFiles(fs.predicates().hasLanguage(Constants.LANGUAGE_KEY));
       final Iterable<InputFile> files = fs.inputFiles(fs.predicates().all());
+
+      final String clippy_json_output_path = config.get(Constants.CFG_CLIPPY_JSON_OUTPUT).orElse(Constants.CFG_CLIPPY_JSON_OUTPUT_DEFAULTVAL);
+
+      // If clippy_json_output_path is not in the filesystem we spawn a process to generate it before continuing w/ analysis
+
+
       final java.util.Random test_random = new java.util.Random();
       final java.util.ArrayList<String> test_files = new java.util.ArrayList<String>();
       final java.util.ArrayList<String> completed_test_files = new java.util.ArrayList<String>();
+
       files.forEach(inputFile -> {
             test_files.add(""+inputFile);
             service.execute(

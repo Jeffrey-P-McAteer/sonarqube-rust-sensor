@@ -23,7 +23,7 @@ public final class RustLanguage extends AbstractLanguage {
 
     @Override
     public String[] getFileSuffixes() {
-        final String[] suffixes = config.getStringArray("sonar.rust.file-suffixes");
+        final String[] suffixes = config.getStringArray(Constants.CFG_FILE_SUFFIXES);
         if (suffixes == null || suffixes.length == 0) {
             return DEFAULT_FILE_SUFFIXES;
         }
@@ -42,10 +42,12 @@ public final class RustLanguage extends AbstractLanguage {
     @Override
     public String[] filenamePatterns() {
         String[] suffixes = this.getFileSuffixes();
-        String[] patterns = new String[suffixes.length];
+        String[] patterns = new String[suffixes.length+1];
         for (int i=0; i<suffixes.length; i+=1) {
             patterns[i] = "**/*"+suffixes[i];
         }
+        final String clippy_json_output_path = this.config.get(Constants.CFG_CLIPPY_JSON_OUTPUT).orElse(Constants.CFG_CLIPPY_JSON_OUTPUT_DEFAULTVAL);
+        patterns[patterns.length] = "**/"+clippy_json_output_path;
         return patterns;
     }
 

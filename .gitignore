@@ -6,3 +6,4 @@ build
 target
 obj
 .scannerwork
+clippy-output.json
