@@ -57,8 +57,7 @@ public class RustRulesDefinition implements RulesDefinition {
 
             repository.done();
 
-            ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-            InputStream inputStream = classloader.getResourceAsStream("clippy-rules.json");
+            InputStream inputStream = RustRulesDefinition.class.getResourceAsStream("clippy-rules.json");
             InputStreamReader streamReader = new InputStreamReader(inputStream, java.nio.charset.StandardCharsets.UTF_8);
             BufferedReader reader = new BufferedReader(streamReader);
 
@@ -75,6 +74,7 @@ public class RustRulesDefinition implements RulesDefinition {
                 String lint_group = rule_o.getString("lint_group");
                 String lint_level = rule_o.getString("lint_level");
                 // TODO use this to create rule in ^^ repo and save it
+                LOGGER.warn("Read rule_id={}", rule_id);
             }
 
             // TODO reach out to clippy for a list of rules

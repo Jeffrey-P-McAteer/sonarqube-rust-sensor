@@ -108,7 +108,7 @@ for rule in parser.parsed_rules:
   print(f'{rule}')
   json_rule_dictionaries.append(rule.to_dict())
 
-resources_folder = os.path.join('sonarqube-rust-sensor', 'src', 'main', 'resources')
+resources_folder = os.path.join('sonarqube-rust-sensor', 'src', 'main', 'resources', 'com', 'jmcateer', 'sonarqube_rust_sensor')
 os.makedirs(resources_folder, exist_ok=True)
 clippy_rules_json_path = os.path.join(resources_folder, 'clippy-rules.json')
 
