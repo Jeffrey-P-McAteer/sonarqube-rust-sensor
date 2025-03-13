@@ -42,6 +42,10 @@ uv run compile_scanner_and_scan_folder.py
 #
 ```
 
+# Component Diagram
+
+![ai-generated-code-diagram.png](ai-generated-code-diagram.png)
+
 # Research
 
  - https://docs.sonarsource.com/sonarqube-server/10.8/extension-guide/developing-a-plugin/supporting-new-languages/
